@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. База данни: PostgreSQL
+  # 1. Database: PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: medical_postgres
@@ -28,5 +28,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  # Това запазва данните на базата дори ако изтриеш контейнера
   postgres_data:
