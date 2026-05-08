@@ -11,4 +11,5 @@ public class ExaminationRequestDTO {
     private String diagnosisCode;
     private String prescribedTreatment;
     private String medicalNotes;
+    private Double price;
 }

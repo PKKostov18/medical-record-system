@@ -34,4 +34,10 @@ public class Examination {
     private String prescribedTreatment;
 
     private String medicalNotes;
+
+    @Column(nullable = false)
+    private Double price;
+
+    @Column(name = "is_paid_by_nzok", nullable = false)
+    private boolean isPaidByNzok;
 }

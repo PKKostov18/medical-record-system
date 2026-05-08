@@ -26,6 +26,7 @@ public class ExaminationService {
     public ExaminationResponseDTO createExamination(ExaminationRequestDTO requestDTO) {
         PatientDTO patient = userServiceClient.getPatientById(requestDTO.getPatientId());
         DoctorDTO doctor = userServiceClient.getDoctorById(requestDTO.getDoctorId());
+        boolean paidByNzok = patient.isHealthInsured();
 
         if (!patient.isHealthInsured()) {
             throw new RuntimeException("Patient does not have valid health insurance.");
@@ -41,6 +42,8 @@ public class ExaminationService {
                 .diagnosis(diagnosis)
                 .prescribedTreatment(requestDTO.getPrescribedTreatment())
                 .medicalNotes(requestDTO.getMedicalNotes())
+                .price(requestDTO.getPrice())
+                .isPaidByNzok(paidByNzok)
                 .build();
 
         Examination savedExamination = examinationRepository.save(examination);
@@ -68,6 +71,8 @@ public class ExaminationService {
         response.setDiagnosisName(exam.getDiagnosis().getName());
         response.setPrescribedTreatment(exam.getPrescribedTreatment());
         response.setMedicalNotes(exam.getMedicalNotes());
+        response.setPrice(exam.getPrice());
+        response.setPaidByNzok(exam.isPaidByNzok());
         return response;
     }
 }

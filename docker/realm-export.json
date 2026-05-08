@@ -1,0 +1,53 @@
+{
+  "realm": "medical-realm",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "ROLE_ADMIN" },
+      { "name": "ROLE_DOCTOR" },
+      { "name": "ROLE_PATIENT" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "medical-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "webOrigins": ["*"],
+      "redirectUris": ["http://localhost:3000/*"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@medical.com",
+      "firstName": "System",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "realmRoles": ["ROLE_ADMIN"]
+    },
+    {
+      "username": "doctor",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "doctor@medical.com",
+      "firstName": "Ivan",
+      "lastName": "Ivanov",
+      "credentials": [{ "type": "password", "value": "doctor123", "temporary": false }],
+      "realmRoles": ["ROLE_DOCTOR"]
+    },
+    {
+      "username": "patient",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "patient@medical.com",
+      "firstName": "Georgi",
+      "lastName": "Georgiev",
+      "credentials": [{ "type": "password", "value": "patient123", "temporary": false }],
+      "realmRoles": ["ROLE_PATIENT"]
+    }
+  ]
+}

@@ -12,4 +12,6 @@ public class ExaminationResponseDTO {
     private String diagnosisName;
     private String prescribedTreatment;
     private String medicalNotes;
+    private Double price;
+    private boolean isPaidByNzok;
 }

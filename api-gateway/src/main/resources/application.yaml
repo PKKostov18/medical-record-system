@@ -1,0 +1,25 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/doctors/**, /api/patients/**
+
+        - id: clinical-service
+          uri: lb://clinical-service
+          predicates:
+            - Path=/api/examinations/**, /api/sick-leaves/**, /api/diagnoses/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
