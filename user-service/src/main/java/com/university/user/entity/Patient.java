@@ -16,6 +16,9 @@ public class Patient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "keycloak_id", unique = true, nullable = false)
+    private String keycloakId;
+
     @Column(nullable = false)
     private String name;
 

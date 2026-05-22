@@ -33,6 +33,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.keycloak:keycloak-admin-client:24.0.0'
     compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'

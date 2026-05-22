@@ -6,6 +6,7 @@ import com.university.clinical_service.service.SickLeaveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,6 +17,7 @@ public class SickLeaveController {
     private final SickLeaveService sickLeaveService;
 
     @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<SickLeaveResponseDTO> issueSickLeave(@RequestBody SickLeaveRequestDTO requestDTO) {
         return new ResponseEntity<>(sickLeaveService.issueSickLeave(requestDTO), HttpStatus.CREATED);
     }

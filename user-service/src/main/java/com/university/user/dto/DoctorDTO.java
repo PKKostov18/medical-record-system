@@ -8,5 +8,9 @@ public class DoctorDTO {
     private String uin;
     private String name;
     private String specialty;
-    private boolean isGp; // Може ли да е личен лекар
+    private boolean isGp;
+
+    private String username;
+    private String email;
+    private String password;
 }

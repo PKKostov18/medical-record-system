@@ -11,4 +11,8 @@ public class PatientDTO {
 
     private Long personalDoctorId;
     private String personalDoctorName;
+
+    private String username;
+    private String email;
+    private String password;
 }

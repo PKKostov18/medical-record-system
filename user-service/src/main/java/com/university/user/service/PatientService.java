@@ -8,6 +8,7 @@ import com.university.user.repository.DoctorRepository;
 import com.university.user.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,23 +19,34 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final KeycloakService keycloakService;
 
+    @Transactional
     public PatientDTO createPatient(PatientDTO dto) {
         if (patientRepository.findByEgn(dto.getEgn()).isPresent()) {
-            throw new RuntimeException("Пациент с това ЕГН вече съществува!");
+            throw new RuntimeException("A patient with this EGN already exists!");
         }
+
+        String keycloakId = keycloakService.registerUserInKeycloak(
+                dto.getUsername(),
+                dto.getEmail(),
+                dto.getName(),
+                dto.getPassword(),
+                "ROLE_PATIENT"
+        );
 
         Patient patient = new Patient();
         patient.setName(dto.getName());
         patient.setEgn(dto.getEgn());
         patient.setHealthInsured(dto.isHealthInsured());
+        patient.setKeycloakId(keycloakId);
 
         if (dto.getPersonalDoctorId() != null) {
             Doctor doctor = doctorRepository.findById(dto.getPersonalDoctorId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Личният лекар не е намерен!"));
+                    .orElseThrow(() -> new ResourceNotFoundException("General Practitioner not found!"));
 
             if (!doctor.isGp()) {
-                throw new RuntimeException("Този лекар няма права на личен лекар (GP)!");
+                throw new RuntimeException("This doctor does not have the rights of a general practitioner (GP)!");
             }
             patient.setPersonalDoctor(doctor);
         }
