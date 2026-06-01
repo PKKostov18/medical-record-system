@@ -6,16 +6,30 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      routes:
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/api/doctors/**, /api/patients/**
+      server:
+        webmvc:
+          routes:
+            - id: user-service-doctors
+              uri: lb://user-service
+              predicates:
+                - Path=/api/doctors,/api/doctors/**
+            - id: user-service-patients
+              uri: lb://user-service
+              predicates:
+                - Path=/api/patients,/api/patients/**
 
-        - id: clinical-service
-          uri: lb://clinical-service
-          predicates:
-            - Path=/api/examinations/**, /api/sick-leaves/**, /api/diagnoses/**
+            - id: clinical-service-examinations
+              uri: lb://clinical-service
+              predicates:
+                - Path=/api/examinations,/api/examinations/**
+            - id: clinical-service-sick-leaves
+              uri: lb://clinical-service
+              predicates:
+                - Path=/api/sick-leaves,/api/sick-leaves/**
+            - id: clinical-service-diagnoses
+              uri: lb://clinical-service
+              predicates:
+                - Path=/api/diagnoses,/api/diagnoses/**
 
 eureka:
   client:

@@ -19,7 +19,7 @@ public class Doctor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "keycloak_id", unique = true, nullable = false)
+    @Column(name = "keycloak_id", unique = true)
     private String keycloakId;
 
     @Column(nullable = false, unique = true, length = 10)

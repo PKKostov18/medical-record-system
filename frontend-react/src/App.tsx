@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import AdminDashboard from './pages/AdminDashboard'
 
 const DummyDashboard = () => {
   const { user, logout } = useAuth()
@@ -9,6 +10,10 @@ const DummyDashboard = () => {
   if (!user) {
     return <Navigate to="/login" />
   }
+
+  const appRoles = user.roles
+    .filter(role => role.startsWith('ROLE_'))
+    .map(role => role.replace('ROLE_', ''))
 
   return (
     <div className="min-vh-100 p-5 d-flex flex-column align-items-center position-relative">
@@ -27,13 +32,20 @@ const DummyDashboard = () => {
           </p>
           <p className="fs-5 m-0">
              <strong className="text-uppercase text-muted me-3 fw-bold" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>Privilege Node(s)</strong> 
-             <span style={{ color: 'var(--accent)' }} className="fw-bold">[{user.roles.join(', ')}]</span>
+             <span style={{ color: 'var(--accent)' }} className="fw-bold">[{appRoles.join(', ')}]</span>
           </p>
         </div>
 
-        <button className="btn btn-primary fw-bold" onClick={logout} style={{ background: 'transparent', border: '1px solid #ff4757 !important', color: '#ff4757', boxShadow: 'none' }}>
-           Terminate Session
-        </button>
+        <div className="d-flex gap-3">
+          {(appRoles.includes('ADMIN')) && (
+            <a href="/admin" className="btn btn-primary fw-bold text-decoration-none d-flex align-items-center">
+              Enter Command Center
+            </a>
+          )}
+          <button className="btn btn-primary fw-bold" onClick={logout} style={{ background: 'transparent', border: '1px solid #ff4757 !important', color: '#ff4757', boxShadow: 'none' }}>
+             Terminate Session
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -47,6 +59,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<DummyDashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </Router>
     </AuthProvider>
