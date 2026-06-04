@@ -58,4 +58,31 @@ public class DoctorService {
         dto.setGp(doctor.isGp());
         return dto;
     }
+
+    public DoctorDTO getDoctorById(Long id) {
+        com.university.user.entity.Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new com.university.user.exception.ResourceNotFoundException("Doctor not found with id: " + id));
+
+        DoctorDTO dto = new DoctorDTO();
+        dto.setId(doctor.getId());
+        dto.setName(doctor.getName());
+        dto.setUin(doctor.getUin());
+        dto.setSpecialty(doctor.getSpecialty());
+        dto.setGp(doctor.isGp());
+
+        return dto;
+    }
+
+    public DoctorDTO getDoctorByKeycloakId(String keycloakId) {
+        com.university.user.entity.Doctor doctor = doctorRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new com.university.user.exception.ResourceNotFoundException("Doctor profile not linked to this account!"));
+
+        DoctorDTO dto = new DoctorDTO();
+        dto.setId(doctor.getId());
+        dto.setName(doctor.getName());
+        dto.setUin(doctor.getUin());
+        dto.setSpecialty(doctor.getSpecialty());
+        dto.setGp(doctor.isGp());
+        return dto;
+    }
 }
