@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Card, Form, Button, Badge, Nav, Tab, Alert, ListGroup } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 interface Patient {
     id: number;
@@ -26,12 +26,12 @@ interface Examination {
     medicalNotes: string;
     price: number;
     paidByNzok: boolean;
-    // Опционално поле: ако някога бекендът започне да връща болничния заедно с прегледа
     sickLeave?: { startDate: string, durationDays: number };
 }
 
 const DoctorDashboard = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const token = localStorage.getItem('token');
 
     const [patients, setPatients] = useState<Patient[]>([]);
@@ -39,11 +39,9 @@ const DoctorDashboard = () => {
     const [examinations, setExaminations] = useState<Examination[]>([]);
     const [diagnosesList, setDiagnosesList] = useState<Diagnosis[]>([]);
 
-    // Състояние за красивото падащо меню с диагнози
     const [diagnosisSearch, setDiagnosisSearch] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
 
-    // Локално състояние, за да показваме издадените болнични веднага на екрана
     const [sessionSickLeaves, setSessionSickLeaves] = useState<Record<number, any>>({});
 
     const [currentDoctorId, setCurrentDoctorId] = useState<number | null>(null);
@@ -117,7 +115,6 @@ const DoctorDashboard = () => {
             const res = await api.get(`/examinations/patient/${selectedPatientId}`);
             if (Array.isArray(res.data)) setExaminations(res.data);
 
-            // Изчистване на формата
             setNewExam({ diagnosisCode: '', prescribedTreatment: '', medicalNotes: '', price: 0 });
             setDiagnosisSearch('');
         } catch (error: any) {
@@ -157,7 +154,6 @@ const DoctorDashboard = () => {
 
     const selectedPatient = patients.find(p => p.id === Number(selectedPatientId));
 
-    // Филтриране на диагнозите за търсачката
     const filteredDiagnoses = diagnosesList.filter(d =>
         d.code.toLowerCase().includes(diagnosisSearch.toLowerCase()) ||
         d.name.toLowerCase().includes(diagnosisSearch.toLowerCase())
@@ -274,7 +270,6 @@ const DoctorDashboard = () => {
                                 <Card.Body className="p-4">
                                     <Form onSubmit={handleCreateExamination}>
 
-                                        {/* Професионално падащо меню с търсачка */}
                                         <Form.Group className="mb-3 position-relative">
                                             <Form.Label className="fw-bold text-muted">Diagnosis Code (ICD):</Form.Label>
                                             <Form.Control
@@ -289,7 +284,6 @@ const DoctorDashboard = () => {
                                                     setShowDropdown(true);
                                                 }}
                                                 onFocus={() => setShowDropdown(true)}
-                                                // Забавяне при скриване, за да хванем клика върху опциите
                                                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                                             />
                                             {showDropdown && filteredDiagnoses.length > 0 && (
@@ -338,7 +332,14 @@ const DoctorDashboard = () => {
                 </Tab.Container>
             )}
             <div className="mt-4 d-flex justify-content-end">
-                <Button variant="outline-danger" className="fw-bold px-4" onClick={logout}>
+                <Button
+                    variant="outline-danger"
+                    className="fw-bold px-4"
+                    onClick={() => {
+                        logout();
+                        navigate('/login');
+                    }}
+                >
                     Log Out
                 </Button>
             </div>

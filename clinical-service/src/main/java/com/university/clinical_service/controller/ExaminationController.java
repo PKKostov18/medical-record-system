@@ -31,8 +31,9 @@ public class ExaminationController {
         return new ResponseEntity<>(examinationService.createExamination(requestDTO), HttpStatus.CREATED);
     }
 
+    // ПРОМЯНА: Разрешаваме и на пациенти да достъпват този ендпойнт
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') or #patientId.toString() == #jwt.subject")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
     public ResponseEntity<List<ExaminationResponseDTO>> getExaminationsByPatientId(
             @PathVariable Long patientId,
             @AuthenticationPrincipal Jwt jwt) {

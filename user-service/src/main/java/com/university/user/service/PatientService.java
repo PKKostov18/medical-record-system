@@ -93,4 +93,22 @@ public class PatientService {
 
         return dto;
     }
+
+    public PatientDTO getPatientByKeycloakId(String keycloakId) {
+        com.university.user.entity.Patient patient = patientRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new com.university.user.exception.ResourceNotFoundException("Patient profile not found!"));
+
+        PatientDTO dto = new PatientDTO();
+        dto.setId(patient.getId());
+        dto.setName(patient.getName());
+        dto.setEgn(patient.getEgn());
+        dto.setHealthInsured(patient.isHealthInsured());
+
+        if (patient.getPersonalDoctor() != null) {
+            dto.setPersonalDoctorId(patient.getPersonalDoctor().getId());
+            dto.setPersonalDoctorName(patient.getPersonalDoctor().getName());
+        }
+
+        return dto;
+    }
 }
