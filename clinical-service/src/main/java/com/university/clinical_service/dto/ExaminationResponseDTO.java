@@ -14,4 +14,5 @@ public class ExaminationResponseDTO {
     private String medicalNotes;
     private Double price;
     private boolean isPaidByNzok;
+    private SickLeaveDTO sickLeave;
 }

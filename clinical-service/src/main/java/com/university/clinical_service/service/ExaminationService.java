@@ -1,10 +1,7 @@
 package com.university.clinical_service.service;
 
 import com.university.clinical_service.client.UserServiceClient;
-import com.university.clinical_service.dto.DoctorDTO;
-import com.university.clinical_service.dto.ExaminationRequestDTO;
-import com.university.clinical_service.dto.ExaminationResponseDTO;
-import com.university.clinical_service.dto.PatientDTO;
+import com.university.clinical_service.dto.*;
 import com.university.clinical_service.entity.Diagnosis;
 import com.university.clinical_service.entity.Examination;
 import com.university.clinical_service.repository.DiagnosisRepository;
@@ -13,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
+import  org.springframework.data.domain.Pageable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +79,6 @@ public class ExaminationService {
      * 2. Most common diagnosis.
      */
     public Diagnosis getMostCommonDiagnosis() {
-        // PageRequest.of(0, 1) safely limits the result to the top 1 diagnosis
         List<Diagnosis> diagnoses = examinationRepository.findMostCommonDiagnoses((Pageable) PageRequest.of(0, 1));
         if (diagnoses.isEmpty()) {
             throw new RuntimeException("No diagnoses found in the system.");
@@ -122,17 +118,79 @@ public class ExaminationService {
      */
     public Map<String, Long> getExaminationsCountPerDoctor() {
         List<Object[]> results = examinationRepository.countExaminationsPerDoctor();
+        System.out.println("DEBUG: Results size from DB: " + (results != null ? results.size() : "null"));
         Map<String, Long> visitsPerDoctor = new HashMap<>();
 
         for (Object[] row : results) {
-            Long doctorId = (Long) row[0];
-            Long count = (Long) row[1];
+            if (row[0] == null) continue;
 
-            DoctorDTO doctor = userServiceClient.getDoctorById(doctorId);
-            visitsPerDoctor.put("Dr. " + doctor.getName(), count);
+            Long doctorId = ((Number) row[0]).longValue();
+            Long count = ((Number) row[1]).longValue();
+
+            try {
+                DoctorDTO doctor = userServiceClient.getDoctorById(doctorId);
+                if (doctor != null && doctor.getName() != null) {
+                    visitsPerDoctor.put("Dr. " + doctor.getName(), count);
+                }
+            } catch (Exception e) {
+                System.err.println("Could not fetch details for doctor ID: " + doctorId);
+            }
         }
 
         return visitsPerDoctor;
+    }
+
+    public ExaminationResponseDTO updateExamination(Long id, ExaminationRequestDTO requestDTO) {
+        Examination exam = examinationRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Examination not found with id: " + id));
+
+        exam.setPrescribedTreatment(requestDTO.getPrescribedTreatment());
+        exam.setMedicalNotes(requestDTO.getMedicalNotes());
+
+        if (requestDTO.getPrice() != null) {
+            exam.setPrice(requestDTO.getPrice());
+        }
+
+        examinationRepository.save(exam);
+
+        PatientDTO patient = userServiceClient.getPatientById(exam.getPatientId());
+        DoctorDTO doctor = userServiceClient.getDoctorById(exam.getDoctorId());
+
+        return mapToResponseDTO(exam, patient, doctor);
+    }
+
+    public List<ExaminationResponseDTO> getAllExaminations() {
+        List<Examination> allExaminations = examinationRepository.findAll();
+
+        return allExaminations.stream().map(exam -> {
+            PatientDTO patient = null;
+            DoctorDTO doctor = null;
+
+            try {
+                patient = userServiceClient.getPatientById(exam.getPatientId());
+                doctor = userServiceClient.getDoctorById(exam.getDoctorId());
+            } catch (Exception e) {
+                System.err.println("Could not load user details for examination ID: " + exam.getId());
+            }
+
+            return mapToResponseDTO(exam, patient, doctor);
+        }).toList();
+    }
+
+    public List<ExaminationResponseDTO> getExaminationsByDoctorId(Long doctorId) {
+        List<Examination> exams = examinationRepository.findByDoctorId(doctorId);
+
+        return exams.stream().map(exam -> {
+            PatientDTO patient = null;
+            DoctorDTO doctor = null;
+            try {
+                patient = userServiceClient.getPatientById(exam.getPatientId());
+                doctor = userServiceClient.getDoctorById(exam.getDoctorId());
+            } catch (Exception e) {
+                System.err.println("Error fetching details for exam: " + exam.getId());
+            }
+            return mapToResponseDTO(exam, patient, doctor);
+        }).toList();
     }
 
     private ExaminationResponseDTO mapToResponseDTO(Examination exam, PatientDTO patient, DoctorDTO doctor) {
@@ -146,6 +204,15 @@ public class ExaminationService {
         response.setMedicalNotes(exam.getMedicalNotes());
         response.setPrice(exam.getPrice());
         response.setPaidByNzok(exam.isPaidByNzok());
+
+        if (exam.getSickLeave() != null) {
+            SickLeaveDTO sickLeaveDTO = new SickLeaveDTO();
+            sickLeaveDTO.setStartDate(exam.getSickLeave().getStartDate());
+            sickLeaveDTO.setDurationDays(exam.getSickLeave().getDurationDays());
+
+            response.setSickLeave(sickLeaveDTO);
+        }
+
         return response;
     }
 }

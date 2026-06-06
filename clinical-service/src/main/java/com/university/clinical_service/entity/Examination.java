@@ -40,4 +40,6 @@ public class Examination {
 
     @Column(name = "is_paid_by_nzok", nullable = false)
     private boolean isPaidByNzok;
+
+    @OneToOne(mappedBy = "examination") private SickLeave sickLeave;
 }

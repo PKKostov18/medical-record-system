@@ -72,4 +72,26 @@ public class ExaminationController {
     public ResponseEntity<Map<String, Long>> getVisitsPerDoctor() {
         return ResponseEntity.ok(examinationService.getExaminationsCountPerDoctor());
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<ExaminationResponseDTO> updateExamination(
+            @PathVariable Long id,
+            @RequestBody ExaminationRequestDTO requestDTO) {
+
+        return ResponseEntity.ok(examinationService.updateExamination(id, requestDTO));
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ExaminationResponseDTO>> getAllExaminationsInSystem() {
+        return ResponseEntity.ok(examinationService.getAllExaminations());
+
+    }
+
+    @GetMapping("/doctor/{doctorId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<List<ExaminationResponseDTO>> getExaminationsByDoctorId(@PathVariable Long doctorId) {
+        return ResponseEntity.ok(examinationService.getExaminationsByDoctorId(doctorId));
+    }
 }

@@ -42,4 +42,6 @@ public class PatientController {
     public ResponseEntity<PatientDTO> getCurrentPatient(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(patientService.getPatientByKeycloakId(jwt.getSubject()));
     }
+
+
 }
