@@ -111,14 +111,12 @@ const PatientDashboard = () => {
         }, 1500);
     };
 
-    // Помощна функция за изчисляване на крайната дата на болничния
     const getEndDate = (startDateStr: string, durationDays: number) => {
         const start = new Date(startDateStr);
         start.setDate(start.getDate() + durationDays);
         return start.toLocaleDateString();
     };
 
-    // Филтрираме само прегледите, които имат издаден болничен лист
     const sickLeavesExams = examinations.filter(exam => exam.sickLeave);
 
     if (loading) {
@@ -188,7 +186,6 @@ const PatientDashboard = () => {
                 </Nav>
 
                 <Tab.Content>
-                    {/* ТАБ 1: ИСТОРИЯ НА ПРЕГЛЕДИТЕ */}
                     <Tab.Pane eventKey="history">
                         {examinations.length === 0 ? (
                             <Alert variant="info" className="shadow-sm">
@@ -266,7 +263,6 @@ const PatientDashboard = () => {
                         )}
                     </Tab.Pane>
 
-                    {/* ТАБ 2: НОВО - СПИСЪК САМО С БОЛНИЧНИ ЛИСТОВЕ */}
                     <Tab.Pane eventKey="sick-leaves">
                         {sickLeavesExams.length === 0 ? (
                             <Alert variant="info" className="shadow-sm">
@@ -307,7 +303,6 @@ const PatientDashboard = () => {
                         )}
                     </Tab.Pane>
 
-                    {/* ТАБ 3: СПИСЪК С ЛЕКАРИ */}
                     <Tab.Pane eventKey="directory">
                         <Row>
                             {doctors.length === 0 ? (

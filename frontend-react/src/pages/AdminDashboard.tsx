@@ -8,16 +8,13 @@ const AdminDashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Състояния за базите данни
     const [doctors, setDoctors] = useState<any[]>([]);
     const [patientsList, setPatientsList] = useState<any[]>([]);
     const [examinations, setExaminations] = useState<any[]>([]);
 
-    // Филтри за базата данни
     const [examFilterDiag, setExamFilterDiag] = useState('');
     const [examFilterDate, setExamFilterDate] = useState('');
 
-    // Състояния за бекенд статистиките
     const [stats, setStats] = useState({
         mostCommonDiagnosis: null as any,
         visitsPerDoctor: {} as Record<string, number>
@@ -27,7 +24,6 @@ const AdminDashboard = () => {
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
-    // Състояния за формите за регистрация
     const [doctorFormData, setDoctorFormData] = useState({
         name: '', uin: '', specialty: '', isGp: false, username: '', email: '', password: ''
     });
@@ -36,7 +32,6 @@ const AdminDashboard = () => {
         name: '', egn: '', isHealthInsured: false, personalDoctorId: '', username: '', email: '', password: ''
     });
 
-    // --- Състояния за INLINE EDIT ---
     const [editingDoctorId, setEditingDoctorId] = useState<number | null>(null);
     const [editDoctorForm, setEditDoctorForm] = useState({ name: '', specialty: '', isGp: false });
 
@@ -49,7 +44,6 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
     });
 
-    // --- НОВО: Функции за автоматично скриване на съобщенията ---
     const showSuccess = (message: string) => {
         setSuccessMsg(message);
         setTimeout(() => setSuccessMsg(''), 3000); // Скрива се след 3 секунди
@@ -59,7 +53,6 @@ const AdminDashboard = () => {
         setErrorMsg(message);
         setTimeout(() => setErrorMsg(''), 5000); // Скрива се след 5 секунди
     };
-    // -------------------------------------------------------------
 
     const loadSystemData = async () => {
         setLoadingData(true);
@@ -114,7 +107,6 @@ const AdminDashboard = () => {
         return <Navigate to="/dashboard" />;
     }
 
-    // --- ФУНКЦИИ ЗА СЪЗДАВАНЕ ---
     const handleDoctorSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -140,9 +132,6 @@ const AdminDashboard = () => {
         } catch (err: any) { showError(err.response?.data?.message || 'Failed to register patient.'); }
     };
 
-    // --- ФУНКЦИИ ЗА РЕДАКТИРАНЕ И ИЗТРИВАНЕ (CRUD) ---
-
-    // Функции за Лекари
     const startEditDoctor = (doctor: any) => {
         setEditingDoctorId(doctor.id);
         setEditDoctorForm({ name: doctor.name, specialty: doctor.specialty, isGp: doctor.gp });
@@ -166,7 +155,6 @@ const AdminDashboard = () => {
         } catch (err) { showError('Cannot delete doctor. They might have connected examinations.'); }
     };
 
-    // Функции за Пациенти
     const startEditPatient = (patient: any) => {
         setEditingPatientId(patient.id);
         setEditPatientForm({ name: patient.name, egn: patient.egn, isHealthInsured: patient.healthInsured });
@@ -189,9 +177,7 @@ const AdminDashboard = () => {
             loadSystemData();
         } catch (err) { showError('Cannot delete patient. They might have connected examinations.'); }
     };
-    // -------------------------------------------------------
 
-    // --- ФРОНТЕНД СТАТИСТИКИ ---
     const localPaidExams = JSON.parse(localStorage.getItem('paid_examinations') || '{}');
     let actualRevenue = 0;
     const revenuePerDoctor: Record<string, number> = {};
@@ -230,7 +216,6 @@ const AdminDashboard = () => {
         const matchDate = examFilterDate ? e.examinationDate.startsWith(examFilterDate) : true;
         return matchDiag && matchDate;
     });
-    // ----------------------------------------------------
 
     return (
         <Container className="py-5" style={{ maxWidth: '1400px' }}>
@@ -261,11 +246,9 @@ const AdminDashboard = () => {
 
                 <Tab.Content>
 
-                    {/* --- ТАБ 1: ДОСТЪП ДО ВСИЧКИ ДАННИ --- */}
                     <Tab.Pane eventKey="database">
                         {loadingData ? <div className="text-center my-5"><Spinner animation="border" /></div> : (
                             <Row>
-                                {/* --- ТАБЛИЦА ЛЕКАРИ --- */}
                                 <Col lg={6}>
                                     <Card className="border-0 shadow-sm mb-4 border-top border-primary border-3">
                                         <Card.Header className="bg-white fw-bold py-3">Registered Doctors ({doctors.length})</Card.Header>
@@ -283,7 +266,6 @@ const AdminDashboard = () => {
                                                 {doctors.map(d => (
                                                     <tr key={d.id}>
                                                         {editingDoctorId === d.id ? (
-                                                            // ИЗГЛЕД ПРИ РЕДАКЦИЯ
                                                             <>
                                                                 <td className="ps-3">
                                                                     <Form.Control size="sm" value={editDoctorForm.name} onChange={e => setEditDoctorForm({...editDoctorForm, name: e.target.value})} />
@@ -300,7 +282,6 @@ const AdminDashboard = () => {
                                                                 </td>
                                                             </>
                                                         ) : (
-                                                            // НОРМАЛЕН ИЗГЛЕД ЗА ЧЕТЕНЕ
                                                             <>
                                                                 <td className="ps-3 fw-bold">Dr. {d.name}</td>
                                                                 <td>{d.specialty}</td>
@@ -319,7 +300,6 @@ const AdminDashboard = () => {
                                     </Card>
                                 </Col>
 
-                                {/* --- ТАБЛИЦА ПАЦИЕНТИ --- */}
                                 <Col lg={6}>
                                     <Card className="border-0 shadow-sm mb-4 border-top border-success border-3">
                                         <Card.Header className="bg-white fw-bold py-3">Registered Patients ({patientsList.length})</Card.Header>
@@ -337,7 +317,6 @@ const AdminDashboard = () => {
                                                 {patientsList.map(p => (
                                                     <tr key={p.id}>
                                                         {editingPatientId === p.id ? (
-                                                            // ИЗГЛЕД ПРИ РЕДАКЦИЯ
                                                             <>
                                                                 <td className="ps-3">
                                                                     <Form.Control size="sm" value={editPatientForm.name} onChange={e => setEditPatientForm({...editPatientForm, name: e.target.value})} />
@@ -354,7 +333,6 @@ const AdminDashboard = () => {
                                                                 </td>
                                                             </>
                                                         ) : (
-                                                            // НОРМАЛЕН ИЗГЛЕД ЗА ЧЕТЕНЕ
                                                             <>
                                                                 <td className="ps-3 fw-bold">{p.name}</td>
                                                                 <td>{p.egn}</td>
@@ -373,7 +351,6 @@ const AdminDashboard = () => {
                                     </Card>
                                 </Col>
 
-                                {/* --- ИСТОРИЯ НА ПРЕГЛЕДИТЕ --- */}
                                 <Col lg={12}>
                                     <Card className="border-0 shadow-sm mb-4 border-top border-warning border-3">
                                         <Card.Header className="bg-white py-3">
@@ -427,7 +404,6 @@ const AdminDashboard = () => {
                         )}
                     </Tab.Pane>
 
-                    {/* --- ТАБ 2: РЕГИСТРАЦИЯ --- */}
                     <Tab.Pane eventKey="registry">
                         <Card className="glass-panel border-0 mb-5 shadow-sm">
                             <Card.Body>
@@ -522,7 +498,6 @@ const AdminDashboard = () => {
                         </Card>
                     </Tab.Pane>
 
-                    {/* --- ТАБ 3: СТАТИСТИКИ --- */}
                     <Tab.Pane eventKey="stats">
                         <Row className="g-4 mb-4">
                             <Col lg={4}>

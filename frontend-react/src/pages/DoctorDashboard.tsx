@@ -18,7 +18,6 @@ interface Diagnosis {
     name: string;
 }
 
-// ДОБАВЕНО id за да можем да го редактираме
 interface SickLeave {
     id?: number;
     startDate: string;
@@ -47,7 +46,6 @@ const DoctorDashboard = () => {
     const [selectedPatientId, setSelectedPatientId] = useState<number | ''>('');
     const [examinations, setExaminations] = useState<Examination[]>([]);
 
-    // --- ДИАГНОЗИ СЪСТОЯНИЯ (CRUD) ---
     const [diagnosesList, setDiagnosesList] = useState<Diagnosis[]>([]);
     const [newDiagForm, setNewDiagForm] = useState({ code: '', name: '' });
     const [editingDiagCode, setEditingDiagCode] = useState<string | null>(null);
@@ -71,14 +69,12 @@ const DoctorDashboard = () => {
         price: 0
     });
 
-    // --- БОЛНИЧНИ СЪСТОЯНИЯ (CRUD) ---
     const [sickLeaveExamId, setSickLeaveExamId] = useState<number | null>(null);
     const [sickLeaveData, setSickLeaveData] = useState({ startDate: '', durationDays: 1 });
 
     const [editingSickLeaveId, setEditingSickLeaveId] = useState<number | null>(null);
     const [editSickLeaveData, setEditSickLeaveData] = useState({ startDate: '', durationDays: 1 });
 
-    // --- ПРЕГЛЕДИ СЪСТОЯНИЯ (Редакция) ---
     const [editingExamId, setEditingExamId] = useState<number | null>(null);
     const [editFormData, setEditFormData] = useState({
         prescribedTreatment: '',
@@ -98,7 +94,6 @@ const DoctorDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
     });
 
-    // --- ПРОМЕНЕНО: Сортиране на диагнозите ---
     const fetchDiagnoses = () => {
         api.get('/diagnoses')
             .then(res => {
@@ -143,7 +138,6 @@ const DoctorDashboard = () => {
         }
     }, [selectedPatientId]);
 
-    // --- НОВО: Автоматично изчистване на съобщенията след 5 секунди ---
     useEffect(() => {
         if (successMsg || errorMsg) {
             const timer = setTimeout(() => {
@@ -154,7 +148,6 @@ const DoctorDashboard = () => {
             return () => clearTimeout(timer);
         }
     }, [successMsg, errorMsg]);
-    // -------------------------------------------------------------------
 
     const loadPatientHistory = async (patientId: number) => {
         try {
@@ -168,7 +161,6 @@ const DoctorDashboard = () => {
         }
     };
 
-    // --- УПРАВЛЕНИЕ НА ДИАГНОЗИ ---
     const handleCreateDiagnosis = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg(''); setSuccessMsg('');
@@ -198,7 +190,6 @@ const DoctorDashboard = () => {
         } catch(err) { setErrorMsg('Cannot delete diagnosis (it might be used in examinations).'); }
     };
 
-    // --- УПРАВЛЕНИЕ НА ПРЕГЛЕДИ ---
     const handleCreateExamination = async (e: React.FormEvent) => {
         e.preventDefault();
         setSuccessMsg(''); setErrorMsg('');
@@ -373,7 +364,6 @@ const DoctorDashboard = () => {
 
                 <Tab.Content>
 
-                    {/* --- ТАБ 1: СТАНДАРТНОТО РАБОТНО ПРОСТРАНСТВО --- */}
                     <Tab.Pane eventKey="workspace">
                         <Card className="mb-4 shadow-sm border-0 border-top border-primary border-3">
                             <Card.Body>
@@ -439,7 +429,6 @@ const DoctorDashboard = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {/* INLINE EDIT ЗА ПРЕГЛЕД */}
                                                             {isEditing ? (
                                                                 <div className="mt-3 p-3 bg-light rounded border">
                                                                     <Form.Group className="mb-2">
@@ -487,7 +476,6 @@ const DoctorDashboard = () => {
                                                                 </>
                                                             )}
 
-                                                            {/* БОЛНИЧЕН С INLINE EDIT И DELETE */}
                                                             {activeSickLeave && (
                                                                 <Alert variant="warning" className="py-2 px-3 mt-3 mb-3 border-warning d-flex justify-content-between align-items-center" style={{ backgroundColor: '#fff8e6' }}>
                                                                     {editingSickLeaveId === activeSickLeave.id && activeSickLeave.id ? (
@@ -515,7 +503,6 @@ const DoctorDashboard = () => {
                                                                 </Alert>
                                                             )}
 
-                                                            {/* БУТОНИ ЗА ПРЕГЛЕД (само ако е мой) */}
                                                             {!isEditing && isMyExam && (
                                                                 <div className="d-flex gap-2 mt-3">
                                                                     <Button variant="outline-primary" size="sm" onClick={() => startEditing(exam)}>Edit Examination</Button>
@@ -526,7 +513,6 @@ const DoctorDashboard = () => {
                                                                 </div>
                                                             )}
 
-                                                            {/* ФОРМА ЗА НОВ БОЛНИЧЕН */}
                                                             {sickLeaveExamId === exam.id && (
                                                                 <Card className="mt-3 border-warning bg-white shadow-sm">
                                                                     <Card.Body>
@@ -605,7 +591,6 @@ const DoctorDashboard = () => {
                         )}
                     </Tab.Pane>
 
-                    {/* --- ТАБ 2: СТАТИСТИКИ И СПРАВКИ НА ЛЕКАРЯ --- */}
                     <Tab.Pane eventKey="practice">
                         <Row>
                             {currentDoctor?.gp && (
@@ -683,7 +668,6 @@ const DoctorDashboard = () => {
                         </Row>
                     </Tab.Pane>
 
-                    {/* --- ТАБ 3: НОВО - УПРАВЛЕНИЕ НА ДИАГНОЗИ (CRUD) --- */}
                     <Tab.Pane eventKey="diagnoses">
                         <Row>
                             <Col lg={4}>
