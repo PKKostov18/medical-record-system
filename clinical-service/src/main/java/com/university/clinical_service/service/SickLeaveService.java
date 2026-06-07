@@ -6,6 +6,7 @@ import com.university.clinical_service.entity.Examination;
 import com.university.clinical_service.entity.SickLeave;
 import com.university.clinical_service.repository.ExaminationRepository;
 import com.university.clinical_service.repository.SickLeaveRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +35,23 @@ public class SickLeaveService {
         SickLeave savedSickLeave = sickLeaveRepository.save(sickLeave);
 
         return mapToResponseDTO(savedSickLeave);
+    }
+
+    @Transactional
+    public SickLeave updateSickLeave(Long id, SickLeaveRequestDTO dto) {
+        SickLeave sickLeave = sickLeaveRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sick leave not found!"));
+
+        sickLeave.setStartDate(dto.getStartDate());
+        sickLeave.setDurationDays(dto.getDurationDays());
+        sickLeave.setEndDate(dto.getStartDate().plusDays(dto.getDurationDays()));
+
+        return sickLeaveRepository.save(sickLeave);
+    }
+
+    @Transactional
+    public void deleteSickLeave(Long id) {
+        sickLeaveRepository.deleteById(id);
     }
 
     private SickLeaveResponseDTO mapToResponseDTO(SickLeave sickLeave) {

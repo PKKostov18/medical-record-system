@@ -42,4 +42,17 @@ public class DoctorController {
     public ResponseEntity<DoctorDTO> getCurrentDoctor(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(doctorService.getDoctorByKeycloakId(jwt.getSubject()));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DoctorDTO> updateDoctor(@PathVariable Long id, @RequestBody DoctorDTO doctorDTO) {
+        return ResponseEntity.ok(doctorService.updateDoctor(id, doctorDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteDoctor(@PathVariable Long id) {
+        doctorService.deleteDoctor(id);
+        return ResponseEntity.noContent().build();
+    }
 }

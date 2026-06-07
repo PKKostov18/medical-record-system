@@ -18,6 +18,13 @@ interface Diagnosis {
     name: string;
 }
 
+// ДОБАВЕНО id за да можем да го редактираме
+interface SickLeave {
+    id?: number;
+    startDate: string;
+    durationDays: number;
+}
+
 interface Examination {
     id: number;
     patient: Patient;
@@ -28,7 +35,7 @@ interface Examination {
     medicalNotes: string;
     price: number;
     paidByNzok: boolean;
-    sickLeave?: { startDate: string, durationDays: number };
+    sickLeave?: SickLeave;
 }
 
 const DoctorDashboard = () => {
@@ -39,20 +46,20 @@ const DoctorDashboard = () => {
     const [patients, setPatients] = useState<Patient[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<number | ''>('');
     const [examinations, setExaminations] = useState<Examination[]>([]);
+
+    // --- ДИАГНОЗИ СЪСТОЯНИЯ (CRUD) ---
     const [diagnosesList, setDiagnosesList] = useState<Diagnosis[]>([]);
+    const [newDiagForm, setNewDiagForm] = useState({ code: '', name: '' });
+    const [editingDiagCode, setEditingDiagCode] = useState<string | null>(null);
+    const [editDiagForm, setEditDiagForm] = useState({ name: '' });
 
     const [diagnosisSearch, setDiagnosisSearch] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
 
     const [sessionSickLeaves, setSessionSickLeaves] = useState<Record<number, any>>({});
-
-    // ПРОМЯНА: Записваме целия обект на лекаря, за да знаем дали е GP
     const [currentDoctor, setCurrentDoctor] = useState<any>(null);
-
-    // --- НОВИ СЪСТОЯНИЯ ЗА СТАТИСТИКИТЕ ---
     const [myExaminations, setMyExaminations] = useState<Examination[]>([]);
     const [myDiagFilter, setMyDiagFilter] = useState('');
-    // --------------------------------------
 
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -64,9 +71,14 @@ const DoctorDashboard = () => {
         price: 0
     });
 
+    // --- БОЛНИЧНИ СЪСТОЯНИЯ (CRUD) ---
     const [sickLeaveExamId, setSickLeaveExamId] = useState<number | null>(null);
     const [sickLeaveData, setSickLeaveData] = useState({ startDate: '', durationDays: 1 });
 
+    const [editingSickLeaveId, setEditingSickLeaveId] = useState<number | null>(null);
+    const [editSickLeaveData, setEditSickLeaveData] = useState({ startDate: '', durationDays: 1 });
+
+    // --- ПРЕГЛЕДИ СЪСТОЯНИЯ (Редакция) ---
     const [editingExamId, setEditingExamId] = useState<number | null>(null);
     const [editFormData, setEditFormData] = useState({
         prescribedTreatment: '',
@@ -86,21 +98,30 @@ const DoctorDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
     });
 
+    // --- ПРОМЕНЕНО: Сортиране на диагнозите ---
+    const fetchDiagnoses = () => {
+        api.get('/diagnoses')
+            .then(res => {
+                if (Array.isArray(res.data)) {
+                    // Сортираме по азбучен ред (ICD код), за да не скачат най-отдолу след редакция
+                    const sortedDiagnoses = res.data.sort((a: Diagnosis, b: Diagnosis) => a.code.localeCompare(b.code));
+                    setDiagnosesList(sortedDiagnoses);
+                }
+            })
+            .catch(err => console.error("Error loading diagnoses", err));
+    };
+
     useEffect(() => {
         api.get('/patients')
             .then(res => { if (Array.isArray(res.data)) setPatients(res.data); })
             .catch(err => console.error("Error loading patients", err));
 
-        api.get('/diagnoses')
-            .then(res => { if (Array.isArray(res.data)) setDiagnosesList(res.data); })
-            .catch(err => console.error("Error loading diagnoses", err));
+        fetchDiagnoses();
 
         api.get('/doctors/me')
             .then(res => {
                 if (res.data && res.data.id) {
                     setCurrentDoctor(res.data);
-
-                    // Извличаме историята на този конкретен лекар за статистиките
                     api.get(`/examinations/doctor/${res.data.id}`)
                         .then(examsRes => setMyExaminations(examsRes.data))
                         .catch(err => console.error("Could not load doctor's history", err));
@@ -122,6 +143,19 @@ const DoctorDashboard = () => {
         }
     }, [selectedPatientId]);
 
+    // --- НОВО: Автоматично изчистване на съобщенията след 5 секунди ---
+    useEffect(() => {
+        if (successMsg || errorMsg) {
+            const timer = setTimeout(() => {
+                setSuccessMsg('');
+                setErrorMsg('');
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [successMsg, errorMsg]);
+    // -------------------------------------------------------------------
+
     const loadPatientHistory = async (patientId: number) => {
         try {
             const res = await api.get(`/examinations/patient/${patientId}`);
@@ -134,6 +168,37 @@ const DoctorDashboard = () => {
         }
     };
 
+    // --- УПРАВЛЕНИЕ НА ДИАГНОЗИ ---
+    const handleCreateDiagnosis = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg(''); setSuccessMsg('');
+        try {
+            await api.post('/diagnoses', newDiagForm);
+            setSuccessMsg('Diagnosis added successfully!');
+            setNewDiagForm({ code: '', name: '' });
+            fetchDiagnoses();
+        } catch(err) { setErrorMsg('Failed to add diagnosis.'); }
+    };
+
+    const saveDiagnosisEdit = async (code: string) => {
+        try {
+            await api.put(`/diagnoses/${code}`, { name: editDiagForm.name });
+            setSuccessMsg('Diagnosis updated successfully!');
+            setEditingDiagCode(null);
+            fetchDiagnoses();
+        } catch(err) { setErrorMsg('Failed to update diagnosis.'); }
+    };
+
+    const deleteDiagnosis = async (code: string) => {
+        if (!window.confirm(`Are you sure you want to delete diagnosis ${code}?`)) return;
+        try {
+            await api.delete(`/diagnoses/${code}`);
+            setSuccessMsg('Diagnosis deleted successfully!');
+            fetchDiagnoses();
+        } catch(err) { setErrorMsg('Cannot delete diagnosis (it might be used in examinations).'); }
+    };
+
+    // --- УПРАВЛЕНИЕ НА ПРЕГЛЕДИ ---
     const handleCreateExamination = async (e: React.FormEvent) => {
         e.preventDefault();
         setSuccessMsg(''); setErrorMsg('');
@@ -154,11 +219,9 @@ const DoctorDashboard = () => {
         try {
             await api.post('/examinations', requestBody);
             setSuccessMsg('Examination recorded successfully!');
-            setTimeout(() => setSuccessMsg(''), 5000);
 
             loadPatientHistory(Number(selectedPatientId));
 
-            // Презареждаме и историята на лекаря, за да се обнови справката веднага
             api.get(`/examinations/doctor/${currentDoctor.id}`)
                 .then(res => setMyExaminations(res.data));
 
@@ -167,35 +230,6 @@ const DoctorDashboard = () => {
         } catch (error: any) {
             console.error(error);
             setErrorMsg(error.response?.data?.message || 'Error recording examination.');
-        }
-    };
-
-    const handleIssueSickLeave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSuccessMsg(''); setErrorMsg('');
-        try {
-            await api.post('/sick-leaves', {
-                examinationId: sickLeaveExamId,
-                startDate: sickLeaveData.startDate,
-                durationDays: sickLeaveData.durationDays
-            });
-
-            setSessionSickLeaves(prev => ({
-                ...prev,
-                [sickLeaveExamId!]: { startDate: sickLeaveData.startDate, durationDays: sickLeaveData.durationDays }
-            }));
-
-            setExaminations(prev => prev.map(ex =>
-                ex.id === sickLeaveExamId ? { ...ex, sickLeave: { startDate: sickLeaveData.startDate, durationDays: sickLeaveData.durationDays } } : ex
-            ));
-
-            setSuccessMsg('Sick leave issued successfully!');
-            setTimeout(() => setSuccessMsg(''), 5000);
-            setSickLeaveExamId(null);
-            setSickLeaveData({ startDate: '', durationDays: 1 });
-        } catch (error: any) {
-            console.error(error);
-            setErrorMsg('Error issuing sick leave.');
         }
     };
 
@@ -222,20 +256,76 @@ const DoctorDashboard = () => {
         try {
             await api.put(`/examinations/${examId}`, editFormData);
             setSuccessMsg('Examination updated successfully!');
-            setTimeout(() => setSuccessMsg(''), 4000);
 
             await loadPatientHistory(Number(selectedPatientId));
             setEditingExamId(null);
         } catch (error: any) {
-            console.error(error);
-            setErrorMsg('Failed to update examination. Ensure backend supports PUT /api/examinations/{id}.');
+            setErrorMsg('Failed to update examination.');
         } finally {
             setIsSavingEdit(false);
         }
     };
 
+    const deleteExam = async (examId: number) => {
+        if (!window.confirm('Are you sure you want to delete this examination?')) return;
+        try {
+            await api.delete(`/examinations/${examId}`);
+            setSuccessMsg('Examination deleted successfully!');
+            loadPatientHistory(Number(selectedPatientId));
+            api.get(`/examinations/doctor/${currentDoctor.id}`).then(res => setMyExaminations(res.data));
+        } catch(err) { setErrorMsg('Error deleting examination.'); }
+    };
+
+    // --- УПРАВЛЕНИЕ НА БОЛНИЧНИ ---
+    const handleIssueSickLeave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSuccessMsg(''); setErrorMsg('');
+        try {
+            await api.post('/sick-leaves', {
+                examinationId: sickLeaveExamId,
+                startDate: sickLeaveData.startDate,
+                durationDays: sickLeaveData.durationDays
+            });
+
+            setSessionSickLeaves(prev => ({
+                ...prev,
+                [sickLeaveExamId!]: { startDate: sickLeaveData.startDate, durationDays: sickLeaveData.durationDays }
+            }));
+
+            setExaminations(prev => prev.map(ex =>
+                ex.id === sickLeaveExamId ? { ...ex, sickLeave: { startDate: sickLeaveData.startDate, durationDays: sickLeaveData.durationDays } } : ex
+            ));
+
+            setSuccessMsg('Sick leave issued successfully!');
+            setSickLeaveExamId(null);
+            setSickLeaveData({ startDate: '', durationDays: 1 });
+            loadPatientHistory(Number(selectedPatientId));
+        } catch (error: any) {
+            setErrorMsg('Error issuing sick leave.');
+        }
+    };
+
+    const saveSickLeaveEdit = async (sickLeaveId: number) => {
+        try {
+            await api.put(`/sick-leaves/${sickLeaveId}`, editSickLeaveData);
+            setSuccessMsg('Sick leave updated successfully!');
+            setEditingSickLeaveId(null);
+            loadPatientHistory(Number(selectedPatientId));
+        } catch(err) { setErrorMsg('Error updating sick leave.'); }
+    };
+
+    const deleteSickLeave = async (sickLeaveId: number) => {
+        if (!window.confirm('Are you sure you want to delete this sick leave?')) return;
+        try {
+            await api.delete(`/sick-leaves/${sickLeaveId}`);
+            setSuccessMsg('Sick leave deleted successfully!');
+            loadPatientHistory(Number(selectedPatientId));
+        } catch(err) { setErrorMsg('Error deleting sick leave.'); }
+    };
+
     const selectedPatient = patients.find(p => p.id === Number(selectedPatientId));
-    const filteredDiagnoses = diagnosesList.filter(d =>
+
+    const filteredDiagnosesDropdown = diagnosesList.filter(d =>
         d.code.toLowerCase().includes(diagnosisSearch.toLowerCase()) ||
         d.name.toLowerCase().includes(diagnosisSearch.toLowerCase())
     );
@@ -268,14 +358,16 @@ const DoctorDashboard = () => {
             {successMsg && <Alert variant="success" className="fw-bold shadow-sm">{successMsg}</Alert>}
             {errorMsg && <Alert variant="danger" className="fw-bold shadow-sm">{errorMsg}</Alert>}
 
-            {/* ОСНОВНА НАВИГАЦИЯ МЕЖДУ РАБОТЕН ИЗГЛЕД И СТАТИСТИКИ */}
             <Tab.Container defaultActiveKey="workspace">
                 <Nav variant="tabs" className="mb-4 fw-bold border-bottom-0">
                     <Nav.Item>
                         <Nav.Link eventKey="workspace" className="text-primary" style={{ cursor: 'pointer', borderTopLeftRadius: '0.5rem' }}>🏥 Patient Workspace</Nav.Link>
                     </Nav.Item>
                     <Nav.Item>
-                        <Nav.Link eventKey="practice" className="text-success" style={{ cursor: 'pointer', borderTopRightRadius: '0.5rem' }}>📊 My Practice & Reports</Nav.Link>
+                        <Nav.Link eventKey="practice" className="text-success" style={{ cursor: 'pointer' }}>📊 My Practice & Reports</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                        <Nav.Link eventKey="diagnoses" className="text-info" style={{ cursor: 'pointer', borderTopRightRadius: '0.5rem' }}>🩺 Manage Diagnoses</Nav.Link>
                     </Nav.Item>
                 </Nav>
 
@@ -322,11 +414,9 @@ const DoctorDashboard = () => {
                                             <p className="text-muted p-3 bg-white rounded shadow-sm">No examinations found for this patient.</p>
                                         ) : (
                                             examinations.map(exam => {
-                                                const activeSickLeave = sessionSickLeaves[exam.id] || exam.sickLeave;
+                                                const activeSickLeave = exam.sickLeave || sessionSickLeaves[exam.id];
                                                 const isEditing = editingExamId === exam.id;
                                                 const isPatientPaid = localPaidExams[exam.id];
-
-                                                // --- НОВО: Проверяваме дали прегледът е извършен от този лекар ---
                                                 const isMyExam = currentDoctor && exam.doctor?.id === currentDoctor.id;
 
                                                 return (
@@ -342,13 +432,14 @@ const DoctorDashboard = () => {
                                                                     {exam.paidByNzok ? (
                                                                         <Badge bg="success" className="p-2">Covered by NHIF</Badge>
                                                                     ) : isPatientPaid ? (
-                                                                        <Badge bg="success" className="p-2">✅ Paid by Patient ({exam.price.toFixed(2)} BGN)</Badge>
+                                                                        <Badge bg="success" className="p-2">✅ Paid by Patient ({exam.price?.toFixed(2)} BGN)</Badge>
                                                                     ) : (
-                                                                        <Badge bg="danger" className="p-2">⚠️ Unpaid: {exam.price.toFixed(2)} BGN</Badge>
+                                                                        <Badge bg="danger" className="p-2">⚠️ Unpaid: {exam.price?.toFixed(2)} BGN</Badge>
                                                                     )}
                                                                 </div>
                                                             </div>
 
+                                                            {/* INLINE EDIT ЗА ПРЕГЛЕД */}
                                                             {isEditing ? (
                                                                 <div className="mt-3 p-3 bg-light rounded border">
                                                                     <Form.Group className="mb-2">
@@ -396,22 +487,46 @@ const DoctorDashboard = () => {
                                                                 </>
                                                             )}
 
+                                                            {/* БОЛНИЧЕН С INLINE EDIT И DELETE */}
                                                             {activeSickLeave && (
-                                                                <Alert variant="warning" className="py-2 px-3 mt-3 mb-3 border-warning" style={{ backgroundColor: '#fff8e6' }}>
-                                                                    <strong className="text-warning-emphasis">📅 Active Sick Leave:</strong> {activeSickLeave.durationDays} days starting from {new Date(activeSickLeave.startDate).toLocaleDateString()}
+                                                                <Alert variant="warning" className="py-2 px-3 mt-3 mb-3 border-warning d-flex justify-content-between align-items-center" style={{ backgroundColor: '#fff8e6' }}>
+                                                                    {editingSickLeaveId === activeSickLeave.id && activeSickLeave.id ? (
+                                                                        <div className="d-flex gap-2 align-items-center w-100">
+                                                                            <strong className="text-warning-emphasis me-2">Edit Sick Leave:</strong>
+                                                                            <Form.Control type="date" size="sm" style={{width: 'auto'}} value={editSickLeaveData.startDate} onChange={e => setEditSickLeaveData({...editSickLeaveData, startDate: e.target.value})} />
+                                                                            <Form.Control type="number" size="sm" style={{width: '70px'}} value={editSickLeaveData.durationDays} onChange={e => setEditSickLeaveData({...editSickLeaveData, durationDays: Number(e.target.value)})} /> days
+                                                                            <Button variant="success" size="sm" className="ms-auto" onClick={() => saveSickLeaveEdit(activeSickLeave.id!)}>Save</Button>
+                                                                            <Button variant="secondary" size="sm" onClick={() => setEditingSickLeaveId(null)}>Cancel</Button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span><strong className="text-warning-emphasis">📅 Active Sick Leave:</strong> {activeSickLeave.durationDays} days starting from {new Date(activeSickLeave.startDate).toLocaleDateString()}</span>
+                                                                            {isMyExam && activeSickLeave.id && (
+                                                                                <div>
+                                                                                    <Button variant="link" size="sm" className="p-0 me-3 text-warning fw-bold text-decoration-none" onClick={() => {
+                                                                                        setEditingSickLeaveId(activeSickLeave.id!);
+                                                                                        setEditSickLeaveData({startDate: activeSickLeave.startDate, durationDays: activeSickLeave.durationDays});
+                                                                                    }}>Edit</Button>
+                                                                                    <Button variant="link" size="sm" className="p-0 text-danger fw-bold text-decoration-none" onClick={() => deleteSickLeave(activeSickLeave.id!)}>Delete</Button>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
                                                                 </Alert>
                                                             )}
 
-                                                            {/* ПРОМЯНА: Показваме бутоните САМО ако прегледът е на логнатия лекар */}
+                                                            {/* БУТОНИ ЗА ПРЕГЛЕД (само ако е мой) */}
                                                             {!isEditing && isMyExam && (
-                                                                <div className="d-flex gap-2">
+                                                                <div className="d-flex gap-2 mt-3">
                                                                     <Button variant="outline-primary" size="sm" onClick={() => startEditing(exam)}>Edit Examination</Button>
+                                                                    <Button variant="outline-danger" size="sm" onClick={() => deleteExam(exam.id)}>Delete Examination</Button>
                                                                     {!activeSickLeave && (
-                                                                        <Button variant="outline-warning" size="sm" onClick={() => setSickLeaveExamId(exam.id)}>Issue Sick Leave</Button>
+                                                                        <Button variant="outline-warning" size="sm" className="ms-auto" onClick={() => setSickLeaveExamId(exam.id)}>+ Issue Sick Leave</Button>
                                                                     )}
                                                                 </div>
                                                             )}
 
+                                                            {/* ФОРМА ЗА НОВ БОЛНИЧЕН */}
                                                             {sickLeaveExamId === exam.id && (
                                                                 <Card className="mt-3 border-warning bg-white shadow-sm">
                                                                     <Card.Body>
@@ -451,10 +566,10 @@ const DoctorDashboard = () => {
                                                             onFocus={() => setShowDropdown(true)}
                                                             onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                                                         />
-                                                        {showDropdown && filteredDiagnoses.length > 0 && (
+                                                        {showDropdown && filteredDiagnosesDropdown.length > 0 && (
                                                             <ListGroup className="position-absolute w-100 shadow" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
-                                                                {filteredDiagnoses.map(d => (
-                                                                    <ListGroup.Item action key={d.code} onClick={() => { setDiagnosisSearch(`${d.code} - ${d.name}`); setNewExam({...newExam, diagnosisCode: d.code}); setShowDropdown(false); }}>
+                                                                {filteredDiagnosesDropdown.map(d => (
+                                                                    <ListGroup.Item action key={d.code} onMouseDown={() => { setDiagnosisSearch(`${d.code} - ${d.name}`); setNewExam({...newExam, diagnosisCode: d.code}); setShowDropdown(false); }}>
                                                                         <strong className="text-primary">{d.code}</strong> - {d.name}
                                                                     </ListGroup.Item>
                                                                 ))}
@@ -493,7 +608,6 @@ const DoctorDashboard = () => {
                     {/* --- ТАБ 2: СТАТИСТИКИ И СПРАВКИ НА ЛЕКАРЯ --- */}
                     <Tab.Pane eventKey="practice">
                         <Row>
-                            {/* Списък с пациенти на личния лекар (Показва се само ако е GP) */}
                             {currentDoctor?.gp && (
                                 <Col lg={4} className="mb-4">
                                     <Card className="border-0 shadow-sm h-100 border-top border-success border-3">
@@ -522,7 +636,6 @@ const DoctorDashboard = () => {
                                 </Col>
                             )}
 
-                            {/* Списък на пациенти по диагноза */}
                             <Col lg={currentDoctor?.gp ? 8 : 12} className="mb-4">
                                 <Card className="border-0 shadow-sm h-100 border-top border-info border-3">
                                     <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
@@ -561,6 +674,76 @@ const DoctorDashboard = () => {
                                                         No records found. Try searching for another diagnosis.
                                                     </td>
                                                 </tr>
+                                            )}
+                                            </tbody>
+                                        </Table>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                    </Tab.Pane>
+
+                    {/* --- ТАБ 3: НОВО - УПРАВЛЕНИЕ НА ДИАГНОЗИ (CRUD) --- */}
+                    <Tab.Pane eventKey="diagnoses">
+                        <Row>
+                            <Col lg={4}>
+                                <Card className="border-0 shadow-sm border-top border-info border-3 mb-4">
+                                    <Card.Header className="bg-white fw-bold py-3">➕ Add New Diagnosis</Card.Header>
+                                    <Card.Body>
+                                        <Form onSubmit={handleCreateDiagnosis}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-muted mb-1">ICD Code</Form.Label>
+                                                <Form.Control type="text" placeholder="e.g., J03.9" value={newDiagForm.code} onChange={e => setNewDiagForm({...newDiagForm, code: e.target.value})} required />
+                                            </Form.Group>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-muted mb-1">Diagnosis Name</Form.Label>
+                                                <Form.Control type="text" placeholder="e.g., Acute tonsillitis" value={newDiagForm.name} onChange={e => setNewDiagForm({...newDiagForm, name: e.target.value})} required />
+                                            </Form.Group>
+                                            <Button variant="info" type="submit" className="w-100 fw-bold text-white">Add Diagnosis</Button>
+                                        </Form>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+
+                            <Col lg={8}>
+                                <Card className="border-0 shadow-sm border-top border-secondary border-3">
+                                    <Card.Header className="bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                                        <span>Diagnoses Dictionary ({diagnosesList.length})</span>
+                                    </Card.Header>
+                                    <Card.Body className="p-0" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                                        <Table hover className="mb-0 align-middle">
+                                            <thead className="table-light small">
+                                            <tr>
+                                                <th className="ps-4 w-25">ICD Code</th>
+                                                <th>Name</th>
+                                                <th className="text-end pe-4">Actions</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {diagnosesList.map(d => (
+                                                <tr key={d.code}>
+                                                    <td className="ps-4 fw-bold text-primary">{d.code}</td>
+                                                    {editingDiagCode === d.code ? (
+                                                        <>
+                                                            <td><Form.Control size="sm" value={editDiagForm.name} onChange={e => setEditDiagForm({name: e.target.value})} /></td>
+                                                            <td className="text-end pe-4 text-nowrap">
+                                                                <Button variant="success" size="sm" className="me-1" onClick={() => saveDiagnosisEdit(d.code)}>Save</Button>
+                                                                <Button variant="secondary" size="sm" onClick={() => setEditingDiagCode(null)}>Cancel</Button>
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <td>{d.name}</td>
+                                                            <td className="text-end pe-4 text-nowrap">
+                                                                <Button variant="outline-primary" size="sm" className="me-1" onClick={() => { setEditingDiagCode(d.code); setEditDiagForm({name: d.name}); }}>Edit</Button>
+                                                                <Button variant="outline-danger" size="sm" onClick={() => deleteDiagnosis(d.code)}>Del</Button>
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                            {diagnosesList.length === 0 && (
+                                                <tr><td colSpan={3} className="text-center text-muted p-4">No diagnoses found in the system.</td></tr>
                                             )}
                                             </tbody>
                                         </Table>

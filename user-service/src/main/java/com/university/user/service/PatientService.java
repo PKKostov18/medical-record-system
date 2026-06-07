@@ -94,6 +94,26 @@ public class PatientService {
         return dto;
     }
 
+    @Transactional
+    public PatientDTO updatePatient(Long id, PatientDTO dto) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found!"));
+
+        patient.setName(dto.getName());
+        patient.setEgn(dto.getEgn());
+        patient.setHealthInsured(dto.isHealthInsured());
+
+        return mapToDTO(patientRepository.save(patient));
+    }
+
+    @Transactional
+    public void deletePatient(Long id) {
+        if (!patientRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Patient not found!");
+        }
+        patientRepository.deleteById(id);
+    }
+
     public PatientDTO getPatientByKeycloakId(String keycloakId) {
         com.university.user.entity.Patient patient = patientRepository.findByKeycloakId(keycloakId)
                 .orElseThrow(() -> new com.university.user.exception.ResourceNotFoundException("Patient profile not found!"));

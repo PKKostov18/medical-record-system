@@ -2,6 +2,7 @@ package com.university.user.service;
 
 import com.university.user.dto.DoctorDTO;
 import com.university.user.entity.Doctor;
+import com.university.user.exception.ResourceNotFoundException;
 import com.university.user.repository.DoctorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -71,6 +72,26 @@ public class DoctorService {
         dto.setGp(doctor.isGp());
 
         return dto;
+    }
+
+    @Transactional
+    public DoctorDTO updateDoctor(Long id, DoctorDTO dto) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found!"));
+
+        doctor.setName(dto.getName());
+        doctor.setSpecialty(dto.getSpecialty());
+        doctor.setGp(dto.isGp());
+
+        return mapToDTO(doctorRepository.save(doctor));
+    }
+
+    @Transactional
+    public void deleteDoctor(Long id) {
+        if (!doctorRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Doctor not found!");
+        }
+        doctorRepository.deleteById(id);
     }
 
     public DoctorDTO getDoctorByKeycloakId(String keycloakId) {

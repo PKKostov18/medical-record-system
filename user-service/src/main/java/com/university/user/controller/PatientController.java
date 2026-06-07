@@ -43,5 +43,16 @@ public class PatientController {
         return ResponseEntity.ok(patientService.getPatientByKeycloakId(jwt.getSubject()));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PatientDTO> updatePatient(@PathVariable Long id, @RequestBody PatientDTO patientDTO) {
+        return ResponseEntity.ok(patientService.updatePatient(id, patientDTO));
+    }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
+        patientService.deletePatient(id);
+        return ResponseEntity.noContent().build();
+    }
 }

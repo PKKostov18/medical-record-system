@@ -6,6 +6,7 @@ import com.university.clinical_service.entity.Diagnosis;
 import com.university.clinical_service.entity.Examination;
 import com.university.clinical_service.repository.DiagnosisRepository;
 import com.university.clinical_service.repository.ExaminationRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -140,25 +141,6 @@ public class ExaminationService {
         return visitsPerDoctor;
     }
 
-    public ExaminationResponseDTO updateExamination(Long id, ExaminationRequestDTO requestDTO) {
-        Examination exam = examinationRepository.findById(id)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Examination not found with id: " + id));
-
-        exam.setPrescribedTreatment(requestDTO.getPrescribedTreatment());
-        exam.setMedicalNotes(requestDTO.getMedicalNotes());
-
-        if (requestDTO.getPrice() != null) {
-            exam.setPrice(requestDTO.getPrice());
-        }
-
-        examinationRepository.save(exam);
-
-        PatientDTO patient = userServiceClient.getPatientById(exam.getPatientId());
-        DoctorDTO doctor = userServiceClient.getDoctorById(exam.getDoctorId());
-
-        return mapToResponseDTO(exam, patient, doctor);
-    }
-
     public List<ExaminationResponseDTO> getAllExaminations() {
         List<Examination> allExaminations = examinationRepository.findAll();
 
@@ -191,6 +173,27 @@ public class ExaminationService {
             }
             return mapToResponseDTO(exam, patient, doctor);
         }).toList();
+    }
+
+    @Transactional
+    public ExaminationResponseDTO updateExamination(Long id, ExaminationRequestDTO dto) {
+        Examination exam = examinationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Examination not found!"));
+
+        exam.setPrescribedTreatment(dto.getPrescribedTreatment());
+        exam.setMedicalNotes(dto.getMedicalNotes());
+
+        if (!exam.isPaidByNzok() && dto.getPrice() != null) {
+            exam.setPrice(dto.getPrice());
+        }
+
+        Examination savedExam = examinationRepository.save(exam);
+        return mapToResponseDTO(savedExam, null, null);
+    }
+
+    @Transactional
+    public void deleteExamination(Long id) {
+        examinationRepository.deleteById(id);
     }
 
     private ExaminationResponseDTO mapToResponseDTO(Examination exam, PatientDTO patient, DoctorDTO doctor) {

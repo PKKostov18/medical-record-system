@@ -31,7 +31,6 @@ public class ExaminationController {
         return new ResponseEntity<>(examinationService.createExamination(requestDTO), HttpStatus.CREATED);
     }
 
-    // ПРОМЯНА: Разрешаваме и на пациенти да достъпват този ендпойнт
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
     public ResponseEntity<List<ExaminationResponseDTO>> getExaminationsByPatientId(
@@ -39,7 +38,6 @@ public class ExaminationController {
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(examinationService.getExaminationsByPatientId(patientId));
     }
-
 
     // --- STATISTICS & REPORTS (ADMIN ONLY) ---
 
@@ -73,15 +71,6 @@ public class ExaminationController {
         return ResponseEntity.ok(examinationService.getExaminationsCountPerDoctor());
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<ExaminationResponseDTO> updateExamination(
-            @PathVariable Long id,
-            @RequestBody ExaminationRequestDTO requestDTO) {
-
-        return ResponseEntity.ok(examinationService.updateExamination(id, requestDTO));
-    }
-
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ExaminationResponseDTO>> getAllExaminationsInSystem() {
@@ -93,5 +82,18 @@ public class ExaminationController {
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<List<ExaminationResponseDTO>> getExaminationsByDoctorId(@PathVariable Long doctorId) {
         return ResponseEntity.ok(examinationService.getExaminationsByDoctorId(doctorId));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<ExaminationResponseDTO> updateExamination(@PathVariable Long id, @RequestBody ExaminationRequestDTO dto) {
+        return ResponseEntity.ok(examinationService.updateExamination(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<Void> deleteExamination(@PathVariable Long id) {
+        examinationService.deleteExamination(id);
+        return ResponseEntity.noContent().build();
     }
 }
