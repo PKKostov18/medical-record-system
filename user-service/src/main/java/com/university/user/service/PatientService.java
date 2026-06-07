@@ -1,5 +1,6 @@
 package com.university.user.service;
 
+import com.university.user.client.ClinicalServiceClient;
 import com.university.user.dto.PatientDTO;
 import com.university.user.entity.Doctor;
 import com.university.user.entity.Patient;
@@ -20,6 +21,7 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final KeycloakService keycloakService;
+    private final ClinicalServiceClient clinicalServiceClient;
 
     @Transactional
     public PatientDTO createPatient(PatientDTO dto) {
@@ -108,10 +110,18 @@ public class PatientService {
 
     @Transactional
     public void deletePatient(Long id) {
-        if (!patientRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Patient not found!");
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found!"));
+
+        if (clinicalServiceClient.hasExaminations(id)) {
+            throw new IllegalStateException("Cannot delete patient: existing examinations found.");
         }
-        patientRepository.deleteById(id);
+
+        if (patient.getKeycloakId() != null) {
+            keycloakService.deleteUserInKeycloak(patient.getKeycloakId());
+        }
+
+        patientRepository.delete(patient);
     }
 
     public PatientDTO getPatientByKeycloakId(String keycloakId) {

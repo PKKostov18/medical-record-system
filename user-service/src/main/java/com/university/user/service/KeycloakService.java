@@ -53,4 +53,15 @@ public class KeycloakService {
             return keycloakUserId;
         }
     }
+
+    public void deleteUserInKeycloak(String keycloakId) {
+        try {
+            keycloak.realm("your-realm-name")
+                    .users()
+                    .get(keycloakId)
+                    .remove();
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting user from Keycloak: " + e.getMessage());
+        }
+    }
 }

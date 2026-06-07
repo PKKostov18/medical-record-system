@@ -1,6 +1,7 @@
 package com.university.clinical_service.service;
 
 import com.university.clinical_service.dto.SickLeaveRequestDTO;
+import com.university.clinical_service.dto.SickLeaveResponseDTO;
 import com.university.clinical_service.entity.Examination;
 import com.university.clinical_service.entity.SickLeave;
 import com.university.clinical_service.repository.ExaminationRepository;
@@ -44,15 +45,17 @@ public class SickLeaveServiceTest {
         SickLeave savedLeave = new SickLeave();
         savedLeave.setId(10L);
         savedLeave.setDurationDays(5);
+        savedLeave.setExamination(exam);
 
         when(examinationRepository.findById(1L)).thenReturn(Optional.of(exam));
         when(sickLeaveRepository.save(any(SickLeave.class))).thenReturn(savedLeave);
 
         // Act
-        var result = sickLeaveService.issueSickLeave(req);
+        SickLeaveResponseDTO result = sickLeaveService.issueSickLeave(req);
 
         // Assert
         assertNotNull(result);
+        assertEquals(10L, result.getId());
         verify(sickLeaveRepository, times(1)).save(any(SickLeave.class));
     }
 }

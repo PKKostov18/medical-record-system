@@ -1,5 +1,6 @@
 package com.university.user.service;
 
+import com.university.user.client.ClinicalServiceClient;
 import com.university.user.dto.DoctorDTO;
 import com.university.user.entity.Doctor;
 import com.university.user.exception.ResourceNotFoundException;
@@ -17,6 +18,7 @@ public class DoctorService {
 
     private final DoctorRepository doctorRepository;
     private final KeycloakService keycloakService;
+    private final ClinicalServiceClient clinicalServiceClient;
 
     @Transactional
     public DoctorDTO createDoctor(DoctorDTO dto) {
@@ -88,10 +90,16 @@ public class DoctorService {
 
     @Transactional
     public void deleteDoctor(Long id) {
-        if (!doctorRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Doctor not found!");
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found!"));
+
+        if (doctor.getKeycloakId() != null) {
+            keycloakService.deleteUserInKeycloak(doctor.getKeycloakId());
         }
-        doctorRepository.deleteById(id);
+
+        clinicalServiceClient.deleteExaminationsByDoctor(id);
+
+        doctorRepository.delete(doctor);
     }
 
     public DoctorDTO getDoctorByKeycloakId(String keycloakId) {

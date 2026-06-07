@@ -173,9 +173,11 @@ const AdminDashboard = () => {
         if (!window.confirm('Are you sure you want to delete this patient?')) return;
         try {
             await api.delete(`/patients/${id}`);
-            showSuccess('Patient deleted successfully!');
+            setSuccessMsg('Patient deleted successfully!');
             loadSystemData();
-        } catch (err) { showError('Cannot delete patient. They might have connected examinations.'); }
+        } catch (err: any) {
+            setErrorMsg(err.response?.data?.message || 'Cannot delete patient: they have existing medical records.');
+        }
     };
 
     const localPaidExams = JSON.parse(localStorage.getItem('paid_examinations') || '{}');
@@ -387,7 +389,9 @@ const AdminDashboard = () => {
                                                 {filteredExaminations.map(e => (
                                                     <tr key={e.id}>
                                                         <td className="ps-4">{new Date(e.examinationDate).toLocaleDateString()}</td>
-                                                        <td className="fw-bold">Dr. {e.doctor?.name}</td>
+                                                        <td className="fw-bold">
+                                                            {e.doctor?.name ? `Dr. ${e.doctor.name}` : <span className="text-muted fst-italic">No Name Info</span>}
+                                                        </td>
                                                         <td>{e.diagnosisName}</td>
                                                         <td>{e.paidByNzok ? <Badge bg="success">NHIF</Badge> : (localPaidExams[e.id] ? <Badge bg="success">Paid ({e.price} BGN)</Badge> : <Badge bg="danger">Unpaid ({e.price} BGN)</Badge>)}</td>
                                                     </tr>

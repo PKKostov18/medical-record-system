@@ -96,4 +96,16 @@ public class ExaminationController {
         examinationService.deleteExamination(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/doctor/{doctorId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteExaminationsByDoctorId(@PathVariable Long doctorId) {
+        examinationService.deleteExaminationsByDoctorId(doctorId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/exists-by-patient/{patientId}")
+    public ResponseEntity<Boolean> existsByPatient(@PathVariable Long patientId) {
+        return ResponseEntity.ok(examinationService.hasExaminationsForPatient(patientId));
+    }
 }

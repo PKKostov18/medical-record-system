@@ -81,8 +81,8 @@ public class ExaminationService {
      */
     public Diagnosis getMostCommonDiagnosis() {
         List<Diagnosis> diagnoses = examinationRepository.findMostCommonDiagnoses((Pageable) PageRequest.of(0, 1));
-        if (diagnoses.isEmpty()) {
-            throw new RuntimeException("No diagnoses found in the system.");
+        if (diagnoses == null || diagnoses.isEmpty()) {
+            return null;
         }
         return diagnoses.getFirst();
     }
@@ -192,8 +192,17 @@ public class ExaminationService {
     }
 
     @Transactional
+    public void deleteExaminationsByDoctorId(Long doctorId) {
+        examinationRepository.deleteByDoctorId(doctorId);
+    }
+
+    @Transactional
     public void deleteExamination(Long id) {
         examinationRepository.deleteById(id);
+    }
+
+    public boolean hasExaminationsForPatient(Long patientId) {
+        return examinationRepository.existsByPatientId(patientId);
     }
 
     private ExaminationResponseDTO mapToResponseDTO(Examination exam, PatientDTO patient, DoctorDTO doctor) {

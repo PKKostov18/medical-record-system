@@ -3,6 +3,7 @@ package com.university.clinical_service.repository;
 import com.university.clinical_service.entity.Diagnosis;
 import com.university.clinical_service.entity.Examination;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,4 +32,10 @@ public interface ExaminationRepository extends JpaRepository<Examination, Long> 
 
     @Query("SELECT e.doctorId, COUNT(e.id) FROM Examination e GROUP BY e.doctorId")
     List<Object[]> countExaminationsPerDoctor();
+
+    @Modifying
+    @Query("DELETE FROM Examination e WHERE e.doctorId = :doctorId")
+    void deleteByDoctorId(@Param("doctorId") Long doctorId);
+
+    boolean existsByPatientId(Long patientId);
 }
